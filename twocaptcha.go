@@ -5,7 +5,6 @@ package twocaptcha
 import (
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -75,7 +74,6 @@ func (c *TwoCaptchaClient) apiRequest(URL string, params map[string]string, dela
 		return "", errors.New("Maximum retries exceeded")
 	}
 	time.Sleep(delay * time.Second)
-	log.Println("2C: performing request", URL)
 	form := url.Values{}
 	form.Add("key", c.ApiKey)
 	for k, v := range params {
@@ -97,7 +95,6 @@ func (c *TwoCaptchaClient) apiRequest(URL string, params map[string]string, dela
 		return "", err
 	}
 	resp.Body.Close()
-	log.Println("Got response", string(body))
 	if strings.Contains(string(body), "CAPCHA_NOT_READY") {
 		return c.apiRequest(URL, params, delay, retries-1)
 	}
