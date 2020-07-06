@@ -3,6 +3,7 @@ package twocaptcha
 // package twocaptcha provides a Golang client for https://2captcha.com/
 
 import (
+	"encoding/base64"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -33,6 +34,52 @@ func New(apiKey string) *TwoCaptchaClient {
 		ApiKey: apiKey,
 		Client: http.DefaultClient,
 	}
+}
+
+// SolveCaptcha performs a normal captcha solving request to 2captcha.com
+// and returns with the solved captcha if the request was successful.
+// Valid ApiKey is required.
+// See more details on https://2captcha.com/2captcha-api#solving_normal_captcha
+func (c *TwoCaptchaClient) SolveCaptcha(url string) (string, error) {
+
+	resp, err := http.Get(url)
+	if err != nil || resp.StatusCode != 200 {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	strBase64 := base64.StdEncoding.EncodeToString(body)
+
+	captchaId, err := c.apiRequest(
+		ApiURL,
+		map[string]string{
+			"method":   "base64",
+			"body":     strBase64,
+			"phrase":   "1",
+			"regsense": "1",
+		},
+		0,
+		3,
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	return c.apiRequest(
+		ResultURL,
+		map[string]string{
+			"id":     captchaId,
+			"action": "get",
+		},
+		5,
+		20,
+	)
 }
 
 // SolveRecaptchaV2 performs a recaptcha v2 solving request to 2captcha.com
